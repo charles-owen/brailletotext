@@ -8,9 +8,9 @@ import SwiftUI
 
 struct BrailleCellView: View {
    @State private var dots = [false, false, false, false, false, false]
-   @State private var translatedText = ""
+   @State private var translatedText = " "
    
-   let brailleMap: [String: String] = [
+   let brailleMap: [String: String] = [		
       "100000": "A/1", "110000": "B/2",
       "100100": "C/3", "100110": "D/4",
       "100010": "E/5", "110100": "F/6",
@@ -27,15 +27,33 @@ struct BrailleCellView: View {
       "010111": "W", "101101": "X",
       "101111": "Y", "101011": "X",
       
+      "111101": "and", "111111": "for",
+      "111011": "of", "011101": "the",
+      "011111": "with", "100001": "ch/child",
+      "100101": "sh/shall", "100111": "th/his",
+      "100011": "wh/which", "110011": "ou/out",
+      "001100": "st/still",
+      
+      "010001": "en",
+      "001010": "in",
+      
+      "010000": ",",
+      "011000": ";/be",
+      "010010": ":/can",
+      "010011": "./dis",
+      "011010": "!",
+      "011001": "?",
+      "001001": "-",
+      
    ]
    
    @FocusState private var isFocused: Bool
    @State private var pressedKeys: Set<String> = []
-   @State private var output: String = ""
+   //@State private var output: String = ""
    
    let keyToDot: [String: Int] = [
-      "s": 0x01, "d": 0x02, "f": 0x04,
-      "j": 0x08, "k": 0x10, "l": 0x20
+      "s": 2, "d": 1, "f": 0,
+      "j": 3, "k": 4, "l": 5
    ]
    
    var body: some View {
@@ -62,7 +80,7 @@ struct BrailleCellView: View {
             }
          }
          
-         Text(" \(translatedText) ")
+         Text("\(translatedText)")
             .font(.system(size: 120, weight: .bold))
          
       }
@@ -74,12 +92,28 @@ struct BrailleCellView: View {
       .overlay(
          KeyCaptureRepresentable(
             onKeyDown: { event in
-               print(event.characters)
-               // lastKeyDown = event.charactersIgnoringModifiers ?? "Unknown"
+               if pressedKeys.isEmpty {
+                  dots = [false, false, false, false, false, false]
+                  translatedText = " "
+               }
+               if let c = event.charactersIgnoringModifiers {
+                  pressedKeys.insert(c)
+                  
+                  switch c {
+                  case "s", "d", "f", "j", "k", "l":
+                     let dotIndex = keyToDot[String(c)] ?? 0
+                     dots[dotIndex] = true
+                     translateBraille()
+                  default:
+                     break
+                  }
+                  
+               }
             },
             onKeyUp: { event in
-               print(event.characters)
-               //lastKeyUp = event.charactersIgnoringModifiers ?? "Unknown"
+               if let c = event.charactersIgnoringModifiers {
+                  pressedKeys.remove(c)
+               }
             }
          )
       )
@@ -87,7 +121,11 @@ struct BrailleCellView: View {
    
    func translateBraille() {
       let key = dots.map { $0 ? "1" : "0" }.joined()
-      translatedText = brailleMap[key] ?? "?"
+      if key == "000000" {
+         translatedText = " "
+      } else {
+         translatedText = brailleMap[key] ?? "\u{2588}"
+      }
    }
 }
 
